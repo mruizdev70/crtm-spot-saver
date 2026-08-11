@@ -58,11 +58,17 @@ export const Route = createFileRoute("/_authenticated/administracion")({
 });
 
 const ROLES = [
-  { valor: "estandar", texto: "Empleado" },
-  { valor: "responsable", texto: "Responsable de Unidad" },
-  { valor: "admin", texto: "Admin · Asuntos Generales" },
-  { valor: "autoridad", texto: "Autoridad · Jefa Coord. Admón." },
+  { valor: "admin", texto: "Admin · Control total" },
+  { valor: "titular", texto: "Usuario Titular · Plaza fija asignada" },
+  { valor: "estandar", texto: "Usuario Estándar · Fase libre" },
 ] as const;
+
+const NOMBRE_ROL: Record<string, string> = {
+  admin: "Admin",
+  titular: "Usuario Titular",
+  estandar: "Usuario Estándar",
+};
+
 
 const TIPOS_SANCION = [
   { valor: "advertencia_verbal", texto: "1) Advertencia verbal" },
