@@ -228,6 +228,42 @@ export type Database = {
           },
         ]
       }
+      spot_titulares: {
+        Row: {
+          created_at: string
+          id: string
+          spot_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          spot_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          spot_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spot_titulares_spot_id_fkey"
+            columns: ["spot_id"]
+            isOneToOne: false
+            referencedRelation: "parking_spots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_titulares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades: {
         Row: {
           created_at: string
@@ -301,6 +337,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      es_titular_plaza: {
+        Args: { _spot_id: string; _user_id: string }
+        Returns: boolean
+      }
       esta_bloqueado: {
         Args: { _fecha: string; _user_id: string }
         Returns: boolean
@@ -316,7 +356,7 @@ export type Database = {
       my_unidad: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "empleado" | "responsable" | "admin" | "autoridad"
+      app_role: "admin" | "titular" | "estandar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -444,7 +484,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["empleado", "responsable", "admin", "autoridad"],
+      app_role: ["admin", "titular", "estandar"],
     },
   },
 } as const
