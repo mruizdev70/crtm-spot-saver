@@ -292,7 +292,7 @@ function Usuarios() {
                 <TableCell>{u.es_responsable ? "Sí" : "No"}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">
-                    {roles.find((r) => r.user_id === u.id)?.role ?? "estandar"}
+                    {NOMBRE_ROL[roles.find((r) => r.user_id === u.id)?.role ?? "estandar"]}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
