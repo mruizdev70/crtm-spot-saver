@@ -76,20 +76,19 @@ function Reservas() {
   const { data: sesion } = useSesion();
   const queryClient = useQueryClient();
 
-  const semanas = useMemo(() => {
-    const actual = inicioSemana(ahora);
-    return { actual, siguiente: addDays(actual, 7) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const lunesActual = useMemo(() => inicioSemana(ahora), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [semanaSel, setSemanaSel] = useState<"actual" | "siguiente">("siguiente");
-  const inicio = semanaSel === "actual" ? semanas.actual : semanas.siguiente;
+  const esAdmin = !!sesion?.esStaff;
+  const [offset, setOffset] = useState(1);
+  const offsetSeguro = esAdmin ? Math.max(0, offset) : Math.min(1, Math.max(0, offset));
+  const inicio = addDays(lunesActual, offsetSeguro * 7);
   const dias = diasLaborables(inicio);
   const fase = faseDeSemana(inicio, ahora);
 
   const [diaSel, setDiaSel] = useState<string>(iso(dias[0]!));
   const fechasSemana = dias.map(iso);
   const fecha = fechasSemana.includes(diaSel) ? diaSel : fechasSemana[0]!;
+
 
   const [plazaAReservar, setPlazaAReservar] = useState<Plaza | null>(null);
   const [matriculaSel, setMatriculaSel] = useState<string>("");
