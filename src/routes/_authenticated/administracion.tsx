@@ -97,12 +97,20 @@ function Administracion() {
       <Tabs defaultValue="usuarios">
         <TabsList className="flex-wrap">
           <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
+          <TabsTrigger value="unidades">Gestión de Unidades</TabsTrigger>
+          <TabsTrigger value="plazas">Plazas y titulares</TabsTrigger>
           <TabsTrigger value="ocupacion">Control diario</TabsTrigger>
           <TabsTrigger value="sanciones">Sanciones</TabsTrigger>
           <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
         </TabsList>
         <TabsContent value="usuarios" className="mt-4">
           <Usuarios />
+        </TabsContent>
+        <TabsContent value="unidades" className="mt-4">
+          <Unidades />
+        </TabsContent>
+        <TabsContent value="plazas" className="mt-4">
+          <Plazas />
         </TabsContent>
         <TabsContent value="ocupacion" className="mt-4">
           <Ocupacion />
@@ -113,6 +121,7 @@ function Administracion() {
         <TabsContent value="auditoria" className="mt-4">
           <Auditoria />
         </TabsContent>
+
       </Tabs>
     </div>
   );
