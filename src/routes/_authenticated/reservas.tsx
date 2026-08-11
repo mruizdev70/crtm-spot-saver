@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays } from "date-fns";
-import { Bell, Car, Copy, Lock, ShieldAlert } from "lucide-react";
+import { Bell, Car, ChevronLeft, ChevronRight, Copy, Lock, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/useSesion";
