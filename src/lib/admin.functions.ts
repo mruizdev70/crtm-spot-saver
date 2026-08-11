@@ -9,7 +9,7 @@ const crearUsuarioSchema = z.object({
   nombre_apellidos: z.string().trim().min(2).max(150),
   unidad_id: z.string().uuid().nullable(),
   es_responsable: z.boolean(),
-  rol: z.enum(["empleado", "responsable", "admin", "autoridad"]),
+  rol: z.enum(["admin", "titular", "estandar"]),
   matriculas: z.array(z.string().trim().min(4).max(15)).max(3),
 });
 
@@ -69,7 +69,7 @@ const actualizarUsuarioSchema = z.object({
   login_md: z.string().trim().min(2).max(100),
   unidad_id: z.string().uuid().nullable(),
   es_responsable: z.boolean(),
-  rol: z.enum(["empleado", "responsable", "admin", "autoridad"]),
+  rol: z.enum(["admin", "titular", "estandar"]),
   matriculas: z.array(z.string().trim().min(4).max(15)).max(3),
 });
 
