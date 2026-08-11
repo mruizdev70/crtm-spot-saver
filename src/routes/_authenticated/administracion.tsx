@@ -58,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/administracion")({
 });
 
 const ROLES = [
-  { valor: "empleado", texto: "Empleado" },
+  { valor: "estandar", texto: "Empleado" },
   { valor: "responsable", texto: "Responsable de Unidad" },
   { valor: "admin", texto: "Admin · Asuntos Generales" },
   { valor: "autoridad", texto: "Autoridad · Jefa Coord. Admón." },
@@ -150,7 +150,7 @@ function Usuarios() {
     nombre_apellidos: "",
     unidad_id: "",
     es_responsable: false,
-    rol: "empleado",
+    rol: "estandar",
     m1: "",
     m2: "",
     m3: "",
@@ -195,7 +195,7 @@ function Usuarios() {
       nombre_apellidos: "",
       unidad_id: unidades[0]?.id ?? "",
       es_responsable: false,
-      rol: "empleado",
+      rol: "estandar",
       m1: "",
       m2: "",
       m3: "",
@@ -213,7 +213,7 @@ function Usuarios() {
       nombre_apellidos: u.nombre_apellidos,
       unidad_id: u.unidad_id ?? "",
       es_responsable: u.es_responsable,
-      rol: roles.find((r) => r.user_id === u.id)?.role ?? "empleado",
+      rol: roles.find((r) => r.user_id === u.id)?.role ?? "estandar",
       m1: ms[0] ?? "",
       m2: ms[1] ?? "",
       m3: ms[2] ?? "",
@@ -228,7 +228,7 @@ function Usuarios() {
         nombre_apellidos: form.nombre_apellidos,
         unidad_id: form.unidad_id || null,
         es_responsable: form.es_responsable,
-        rol: form.rol as "empleado" | "responsable" | "admin" | "autoridad",
+        rol: form.rol as "admin" | "titular" | "estandar",
         matriculas: [form.m1, form.m2, form.m3].filter((m) => m.trim().length >= 4),
       };
       if (editando) {
@@ -277,7 +277,7 @@ function Usuarios() {
                 <TableCell>{u.es_responsable ? "Sí" : "No"}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">
-                    {roles.find((r) => r.user_id === u.id)?.role ?? "empleado"}
+                    {roles.find((r) => r.user_id === u.id)?.role ?? "estandar"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
