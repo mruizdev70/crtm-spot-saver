@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Rol = "empleado" | "responsable" | "admin" | "autoridad";
+export type Rol = "admin" | "titular" | "estandar";
+
+export const NOMBRE_ROL: Record<Rol, string> = {
+  admin: "Admin",
+  titular: "Usuario Titular",
+  estandar: "Usuario Estándar",
+};
 
 export interface Perfil {
   id: string;
@@ -19,6 +25,8 @@ export interface Sesion {
   unidad: string | null;
   roles: Rol[];
   esStaff: boolean;
+  esTitular: boolean;
+  plazasTitular: string[];
   matriculas: string[];
 }
 
@@ -30,15 +38,17 @@ export function useSesion() {
       const user = userData.user;
       if (!user) return null;
 
-      const [{ data: perfil }, { data: roles }, { data: matriculas }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("*, unidades(nombre_unidad)")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-        supabase.from("matriculas").select("matricula").eq("user_id", user.id),
-      ]);
+      const [{ data: perfil }, { data: roles }, { data: matriculas }, { data: titularidades }] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*, unidades(nombre_unidad)")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", user.id),
+          supabase.from("matriculas").select("matricula").eq("user_id", user.id),
+          supabase.from("spot_titulares").select("spot_id").eq("user_id", user.id),
+        ]);
 
       const listaRoles = ((roles ?? []).map((r) => r.role) as Rol[]) ?? [];
       const p = perfil as (Perfil & { unidades: { nombre_unidad: string } | null }) | null;
@@ -49,7 +59,9 @@ export function useSesion() {
         perfil: p,
         unidad: p?.unidades?.nombre_unidad ?? null,
         roles: listaRoles,
-        esStaff: listaRoles.includes("admin") || listaRoles.includes("autoridad"),
+        esStaff: listaRoles.includes("admin"),
+        esTitular: listaRoles.includes("titular"),
+        plazasTitular: (titularidades ?? []).map((t) => t.spot_id),
         matriculas: (matriculas ?? []).map((m) => m.matricula),
       };
     },

@@ -26,11 +26,11 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 });
 
 const nombreRol: Record<string, string> = {
-  empleado: "Empleado",
-  responsable: "Responsable de Unidad",
-  admin: "Admin · Asuntos Generales",
-  autoridad: "Autoridad · Jefa Coord. Admón.",
+  admin: "Admin",
+  titular: "Usuario Titular",
+  estandar: "Usuario Estándar",
 };
+
 
 function Perfil() {
   const { data: sesion } = useSesion();

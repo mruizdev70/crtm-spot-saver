@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays } from "date-fns";
-import { Bell, Car, Copy, Lock, ShieldAlert } from "lucide-react";
+import { Bell, Car, ChevronLeft, ChevronRight, Copy, Lock, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/useSesion";
@@ -76,20 +76,19 @@ function Reservas() {
   const { data: sesion } = useSesion();
   const queryClient = useQueryClient();
 
-  const semanas = useMemo(() => {
-    const actual = inicioSemana(ahora);
-    return { actual, siguiente: addDays(actual, 7) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const lunesActual = useMemo(() => inicioSemana(ahora), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [semanaSel, setSemanaSel] = useState<"actual" | "siguiente">("siguiente");
-  const inicio = semanaSel === "actual" ? semanas.actual : semanas.siguiente;
+  const esAdmin = !!sesion?.esStaff;
+  const [offset, setOffset] = useState(1);
+  const offsetSeguro = esAdmin ? Math.max(0, offset) : Math.min(1, Math.max(0, offset));
+  const inicio = addDays(lunesActual, offsetSeguro * 7);
   const dias = diasLaborables(inicio);
   const fase = faseDeSemana(inicio, ahora);
 
   const [diaSel, setDiaSel] = useState<string>(iso(dias[0]!));
   const fechasSemana = dias.map(iso);
   const fecha = fechasSemana.includes(diaSel) ? diaSel : fechasSemana[0]!;
+
 
   const [plazaAReservar, setPlazaAReservar] = useState<Plaza | null>(null);
   const [matriculaSel, setMatriculaSel] = useState<string>("");
@@ -254,11 +253,13 @@ function Reservas() {
     const reserva = reservas.find((r) => r.spot_id === plaza.id);
     if (reserva) return { tipo: "ocupada" as const, reserva };
     if (fase === "cerrada") return { tipo: "cerrada" as const };
-    const esMiUnidad = !!plaza.unidad_id && plaza.unidad_id === sesion?.perfil?.unidad_id;
-    if (fase === "preferente" && !esMiUnidad && !sesion?.esStaff)
+    // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
+    const soyTitularDeLaPlaza = !!sesion?.plazasTitular.includes(plaza.id);
+    if (fase === "preferente" && !soyTitularDeLaPlaza && !sesion?.esStaff)
       return { tipo: "preferente" as const };
     return { tipo: "libre" as const };
   }
+
 
   const etiquetaFase: Record<string, { texto: string; variante: "default" | "secondary" }> = {
     preferente: { texto: "Fase preferente de Unidad", variante: "secondary" },
@@ -279,12 +280,40 @@ function Reservas() {
         <Badge variant={etiquetaFase[fase]!.variante}>{etiquetaFase[fase]!.texto}</Badge>
       </div>
 
-      <Tabs value={semanaSel} onValueChange={(v) => setSemanaSel(v as "actual" | "siguiente")}>
-        <TabsList>
-          <TabsTrigger value="actual">Semana actual</TabsTrigger>
-          <TabsTrigger value="siguiente">Semana siguiente</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center gap-2">
+        <Tabs
+          value={String(Math.min(offsetSeguro, 1))}
+          onValueChange={(v) => setOffset(Number(v))}
+        >
+          <TabsList>
+            <TabsTrigger value="0">Semana actual</TabsTrigger>
+            <TabsTrigger value="1">Semana siguiente</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {esAdmin ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={offsetSeguro === 0}
+              onClick={() => setOffset(offsetSeguro - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {offsetSeguro > 1 ? `Semana +${offsetSeguro} (modo Admin)` : "Navegación Admin"}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setOffset(offsetSeguro + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Solo puedes reservar la semana en curso y la siguiente.
+          </span>
+        )}
+      </div>
+
 
       <div className="flex flex-wrap gap-2">
         {dias.map((d) => {
