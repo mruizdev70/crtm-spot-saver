@@ -278,12 +278,40 @@ function Reservas() {
         <Badge variant={etiquetaFase[fase]!.variante}>{etiquetaFase[fase]!.texto}</Badge>
       </div>
 
-      <Tabs value={semanaSel} onValueChange={(v) => setSemanaSel(v as "actual" | "siguiente")}>
-        <TabsList>
-          <TabsTrigger value="actual">Semana actual</TabsTrigger>
-          <TabsTrigger value="siguiente">Semana siguiente</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center gap-2">
+        <Tabs
+          value={String(Math.min(offsetSeguro, 1))}
+          onValueChange={(v) => setOffset(Number(v))}
+        >
+          <TabsList>
+            <TabsTrigger value="0">Semana actual</TabsTrigger>
+            <TabsTrigger value="1">Semana siguiente</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {esAdmin ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={offsetSeguro === 0}
+              onClick={() => setOffset(offsetSeguro - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {offsetSeguro > 1 ? `Semana +${offsetSeguro} (modo Admin)` : "Navegación Admin"}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setOffset(offsetSeguro + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Solo puedes reservar la semana en curso y la siguiente.
+          </span>
+        )}
+      </div>
+
 
       <div className="flex flex-wrap gap-2">
         {dias.map((d) => {
