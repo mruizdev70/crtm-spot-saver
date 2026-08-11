@@ -798,3 +798,347 @@ function Auditoria() {
     </Card>
   );
 }
+
+function Unidades() {
+  const queryClient = useQueryClient();
+  const { data: unidades = [] } = useUnidades();
+  const [nueva, setNueva] = useState("");
+  const [editando, setEditando] = useState<{ id: string; nombre: string } | null>(null);
+
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ["usuarios-unidad"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, unidad_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: plazas = [] } = useQuery({
+    queryKey: ["plazas-unidad"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("parking_spots").select("id, unidad_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const refrescar = () => {
+    queryClient.invalidateQueries({ queryKey: ["unidades"] });
+    queryClient.invalidateQueries({ queryKey: ["plazas-unidad"] });
+    queryClient.invalidateQueries({ queryKey: ["plazas-admin"] });
+  };
+
+  const crear = useMutation({
+    mutationFn: async () => {
+      const nombre = nueva.trim();
+      if (nombre.length < 2) throw new Error("Nombre demasiado corto.");
+      const { error } = await supabase.from("unidades").insert({ nombre_unidad: nombre });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Unidad creada");
+      setNueva("");
+      refrescar();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "No se pudo crear la unidad."),
+  });
+
+  const renombrar = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("unidades")
+        .update({ nombre_unidad: editando!.nombre.trim() })
+        .eq("id", editando!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Unidad actualizada");
+      setEditando(null);
+      refrescar();
+    },
+    onError: () => toast.error("No se pudo actualizar la unidad."),
+  });
+
+  const eliminar = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("unidades").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Unidad eliminada");
+      refrescar();
+    },
+    onError: () => toast.error("No se pudo eliminar la unidad."),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+        <CardTitle className="text-base">Gestión de Unidades / Divisiones</CardTitle>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Nueva unidad (ej. Sistemas)"
+            value={nueva}
+            onChange={(e) => setNueva(e.target.value)}
+            maxLength={120}
+            className="w-56"
+          />
+          <Button size="sm" disabled={crear.isPending} onClick={() => crear.mutate()}>
+            <Plus className="mr-2 h-4 w-4" /> Crear
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Unidad</TableHead>
+              <TableHead>Plazas</TableHead>
+              <TableHead>Usuarios</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {unidades.map((u) => {
+              const nPlazas = plazas.filter((p) => p.unidad_id === u.id).length;
+              const nUsuarios = usuarios.filter((x) => x.unidad_id === u.id).length;
+              const bloqueada = nPlazas > 0 || nUsuarios > 0;
+              return (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.nombre_unidad}</TableCell>
+                  <TableCell>{nPlazas}</TableCell>
+                  <TableCell>{nUsuarios}</TableCell>
+                  <TableCell className="space-x-1 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditando({ id: u.id, nombre: u.nombre_unidad })}
+                    >
+                      Renombrar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      disabled={bloqueada || eliminar.isPending}
+                      title={
+                        bloqueada ? "Tiene plazas o usuarios vinculados" : "Eliminar unidad"
+                      }
+                      onClick={() => eliminar.mutate(u.id)}
+                    >
+                      Eliminar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+
+      <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renombrar unidad</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editando?.nombre ?? ""}
+            maxLength={120}
+            onChange={(e) => setEditando({ ...editando!, nombre: e.target.value })}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditando(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={renombrar.isPending} onClick={() => renombrar.mutate()}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function Plazas() {
+  const queryClient = useQueryClient();
+  const { data: unidades = [] } = useUnidades();
+  const [plazaSel, setPlazaSel] = useState<string | null>(null);
+
+  const { data: plazas = [] } = useQuery({
+    queryKey: ["plazas-gestion"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parking_spots")
+        .select("id, numero_plaza, unidad_id, unidades(nombre_unidad)")
+        .order("numero_plaza");
+      if (error) throw error;
+      return data as unknown as {
+        id: string;
+        numero_plaza: number;
+        unidad_id: string | null;
+        unidades: { nombre_unidad: string } | null;
+      }[];
+    },
+  });
+
+  const { data: titulares = [] } = useQuery({
+    queryKey: ["titulares"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("spot_titulares").select("spot_id, user_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: candidatos = [] } = useQuery({
+    queryKey: ["candidatos-titulares"],
+    queryFn: async () => {
+      const [{ data: perfiles }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("id, nombre_apellidos, login_md").order("nombre_apellidos"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      const titularIds = new Set(
+        (roles ?? []).filter((r) => r.role === "titular").map((r) => r.user_id),
+      );
+      return (perfiles ?? []).filter((p) => titularIds.has(p.id));
+    },
+  });
+
+  const asignarUnidad = useMutation({
+    mutationFn: async ({ id, unidad_id }: { id: string; unidad_id: string }) => {
+      const { error } = await supabase.from("parking_spots").update({ unidad_id }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Unidad de la plaza actualizada");
+      queryClient.invalidateQueries({ queryKey: ["plazas-gestion"] });
+      queryClient.invalidateQueries({ queryKey: ["plazas"] });
+    },
+    onError: () => toast.error("No se pudo actualizar la plaza."),
+  });
+
+  const alternarTitular = useMutation({
+    mutationFn: async ({ spot_id, user_id, activo }: { spot_id: string; user_id: string; activo: boolean }) => {
+      if (activo) {
+        const { error } = await supabase
+          .from("spot_titulares")
+          .delete()
+          .eq("spot_id", spot_id)
+          .eq("user_id", user_id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("spot_titulares").insert({ spot_id, user_id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["titulares"] }),
+    onError: () => toast.error("No se pudo actualizar la titularidad."),
+  });
+
+  const plaza = plazas.find((p) => p.id === plazaSel) ?? null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Plazas fijas y Usuarios Titulares</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>N.º Plaza</TableHead>
+              <TableHead>Unidad vinculada</TableHead>
+              <TableHead>Titulares con preferencia</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {plazas.map((p) => {
+              const suyos = titulares.filter((t) => t.spot_id === p.id);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.numero_plaza}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={p.unidad_id ?? ""}
+                      onValueChange={(v) => asignarUnidad.mutate({ id: p.id, unidad_id: v })}
+                    >
+                      <SelectTrigger className="w-56">
+                        <SelectValue placeholder="Sin unidad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unidades.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.nombre_unidad}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {suyos.length
+                      ? suyos
+                          .map(
+                            (t) =>
+                              candidatos.find((c) => c.id === t.user_id)?.nombre_apellidos ??
+                              "Usuario",
+                          )
+                          .join(", ")
+                      : "Sin titulares"}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => setPlazaSel(p.id)}>
+                      Titulares
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+
+      <Dialog open={!!plaza} onOpenChange={(o) => !o && setPlazaSel(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Titulares de la Plaza {plaza?.numero_plaza}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {candidatos.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No hay usuarios con rol «Usuario Titular». Asigna ese rol desde la pestaña Usuarios.
+              </p>
+            )}
+            {candidatos.map((c) => {
+              const activo = titulares.some(
+                (t) => t.spot_id === plaza?.id && t.user_id === c.id,
+              );
+              return (
+                <div key={c.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`t-${c.id}`}
+                    checked={activo}
+                    onCheckedChange={() =>
+                      plaza &&
+                      alternarTitular.mutate({ spot_id: plaza.id, user_id: c.id, activo })
+                    }
+                  />
+                  <Label htmlFor={`t-${c.id}`}>
+                    {c.nombre_apellidos}{" "}
+                    <span className="text-xs text-muted-foreground">({c.login_md})</span>
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setPlazaSel(null)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
