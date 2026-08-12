@@ -433,7 +433,21 @@ function Reservas() {
                   </div>
                 )}
                 {estado.tipo === "preferente" && (
-                  <p className="text-sm text-muted-foreground">Exclusivo Unidad {unidad}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Exclusivo Unidad {unidad}</p>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() =>
+                        toast.warning(
+                          "Reserva anticipada exclusiva para Titulares hasta el jueves a las 23:59h",
+                        )
+                      }
+                    >
+                      <Lock className="mr-2 h-4 w-4" />
+                      Reserva anticipada restringida
+                    </Button>
+                  </div>
                 )}
                 {estado.tipo === "cerrada" && (
                   <p className="text-sm text-muted-foreground">
