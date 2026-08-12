@@ -71,6 +71,9 @@ interface Reserva {
   profiles: { nombre_apellidos: string; login_md: string } | null;
 }
 
+const textoAviso = (numero: number, unidad: string, fechaReserva: string) =>
+  `📢 He liberado la Plaza ${numero} (${unidad}) para el día ${fechaLarga(fechaReserva)}. ¡Disponible en la app!`;
+
 function Reservas() {
   const ahora = new Date();
   const { data: sesion } = useSesion();
