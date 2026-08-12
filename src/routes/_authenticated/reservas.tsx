@@ -262,9 +262,10 @@ function Reservas() {
     const reserva = reservas.find((r) => r.spot_id === plaza.id);
     if (reserva) return { tipo: "ocupada" as const, reserva };
     if (fase === "cerrada") return { tipo: "cerrada" as const };
+    if (!sesion) return { tipo: "libre" as const };
     // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
-    const soyTitularDeLaPlaza = !!sesion?.plazasTitular.includes(plaza.id);
-    if (fase === "preferente" && !soyTitularDeLaPlaza && !sesion?.esStaff)
+    const soyTitularDeLaPlaza = sesion.plazasTitular.includes(plaza.id);
+    if (fase === "preferente" && !soyTitularDeLaPlaza && !sesion.esStaff)
       return { tipo: "preferente" as const };
     return { tipo: "libre" as const };
   }
