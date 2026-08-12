@@ -79,13 +79,22 @@ function Reservas() {
   const lunesActual = useMemo(() => inicioSemana(ahora), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const esAdmin = !!sesion?.esStaff;
-  const [offset, setOffset] = useState(1);
+
+  // Posicionamiento inicial: día de hoy (o el lunes siguiente si es fin de semana).
+  const inicioPorDefecto = useMemo(() => {
+    const diaSemana = ahora.getDay(); // 0 domingo, 6 sábado
+    const finDeSemana = diaSemana === 0 || diaSemana === 6;
+    const base = finDeSemana ? addDays(lunesActual, 7) : lunesActual;
+    return { offset: finDeSemana ? 1 : 0, dia: iso(finDeSemana ? base : ahora) };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [offset, setOffset] = useState(inicioPorDefecto.offset);
   const offsetSeguro = esAdmin ? Math.max(0, offset) : Math.min(1, Math.max(0, offset));
   const inicio = addDays(lunesActual, offsetSeguro * 7);
   const dias = diasLaborables(inicio);
   const fase = faseDeSemana(inicio, ahora);
 
-  const [diaSel, setDiaSel] = useState<string>(iso(dias[0]!));
+  const [diaSel, setDiaSel] = useState<string>(inicioPorDefecto.dia);
   const fechasSemana = dias.map(iso);
   const fecha = fechasSemana.includes(diaSel) ? diaSel : fechasSemana[0]!;
 
