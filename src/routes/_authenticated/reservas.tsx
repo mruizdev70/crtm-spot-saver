@@ -167,7 +167,7 @@ function Reservas() {
       if (msg.includes("reservations_spot_fecha_activa")) {
         toast.error("Esa plaza acaba de ser ocupada por otra persona.");
       } else if (msg.includes("reservations_user_fecha_activa")) {
-        toast.error("Ya tienes una plaza reservada para ese día.");
+        toast.error("Ya tienes una reserva confirmada para este día");
       } else if (msg.toLowerCase().includes("row-level")) {
         toast.error("Tienes una sanción de bloqueo vigente para esa fecha.");
       } else {
