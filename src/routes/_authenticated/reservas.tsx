@@ -102,6 +102,7 @@ function Reservas() {
   const [plazaAReservar, setPlazaAReservar] = useState<Plaza | null>(null);
   const [matriculaSel, setMatriculaSel] = useState<string>("");
   const [avisoTeams, setAvisoTeams] = useState<string | null>(null);
+  const [reservaAAnular, setReservaAAnular] = useState<Reserva | null>(null);
 
   const { data: plazas = [] } = useQuery({
     queryKey: ["plazas"],
