@@ -200,9 +200,8 @@ function Reservas() {
     onSuccess: async ({ reserva, tardia }) => {
       const plaza = plazas.find((p) => p.id === reserva.spot_id);
       const unidad = plaza?.unidades?.nombre_unidad ?? "Sin unidad";
-      setAvisoTeams(
-        `📢 Plaza ${plaza?.numero_plaza} (${unidad}) liberada para el ${fechaLarga(reserva.fecha_reserva)}. Disponible en la app.`,
-      );
+      setReservaAAnular(null);
+      setAvisoTeams(textoAviso(plaza?.numero_plaza ?? 0, unidad, reserva.fecha_reserva));
       if (tardia) {
         toast.warning("Anulación registrada como TARDÍA (posterior a las 20:00h).");
       } else {
