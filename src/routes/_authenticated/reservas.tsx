@@ -518,6 +518,67 @@ function Reservas() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!reservaAAnular} onOpenChange={(o) => !o && setReservaAAnular(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Anular tu reserva?</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que deseas anular tu reserva? Al liberar tu plaza con antelación permites que
+              otro compañero del CRTM pueda utilizarla.
+            </DialogDescription>
+          </DialogHeader>
+          {reservaAAnular && (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border bg-muted p-3 text-sm">
+                <p className="font-medium">
+                  Plaza {plazas.find((p) => p.id === reservaAAnular.spot_id)?.numero_plaza} ·{" "}
+                  {plazas.find((p) => p.id === reservaAAnular.spot_id)?.unidades?.nombre_unidad ??
+                    "Sin unidad"}
+                </p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {fechaLarga(reservaAAnular.fecha_reserva)} · Matrícula{" "}
+                  {reservaAAnular.matricula_usada}
+                </p>
+              </div>
+              {esAnulacionTardia(reservaAAnular.fecha_reserva, new Date()) && (
+                <p className="flex items-center gap-2 text-sm text-destructive">
+                  <ShieldAlert className="h-4 w-4" />
+                  Fuera de plazo (20:00h del día anterior): quedará registrada como anulación
+                  tardía.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const plaza = plazas.find((p) => p.id === reservaAAnular?.spot_id);
+                await navigator.clipboard.writeText(
+                  textoAviso(
+                    plaza?.numero_plaza ?? 0,
+                    plaza?.unidades?.nombre_unidad ?? "Sin unidad",
+                    reservaAAnular?.fecha_reserva ?? fecha,
+                  ),
+                );
+                toast.success("Aviso copiado al portapapeles");
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              📋 Copiar aviso para Teams
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={anular.isPending}
+              onClick={() => reservaAAnular && anular.mutate(reservaAAnular)}
+            >
+              Confirmar anulación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={!!avisoTeams} onOpenChange={(o) => !o && setAvisoTeams(null)}>
         <DialogContent>
           <DialogHeader>
