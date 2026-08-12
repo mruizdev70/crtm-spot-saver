@@ -109,7 +109,8 @@ function Administracion() {
         <TabsContent value="unidades" className="mt-4">
           <Unidades />
         </TabsContent>
-        <TabsContent value="plazas" className="mt-4">
+        <TabsContent value="plazas" className="mt-4 space-y-4">
+          <AsignacionPorUsuario />
           <Plazas />
         </TabsContent>
         <TabsContent value="ocupacion" className="mt-4">
