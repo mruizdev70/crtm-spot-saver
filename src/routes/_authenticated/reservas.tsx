@@ -366,7 +366,7 @@ function Reservas() {
                 </p>
               </div>
             </div>
-            <Button variant="destructive" onClick={() => anular.mutate(miReserva)}>
+            <Button variant="destructive" onClick={() => setReservaAAnular(miReserva)}>
               Anular reserva
             </Button>
           </CardContent>
