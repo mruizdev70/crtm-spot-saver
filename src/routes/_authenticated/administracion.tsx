@@ -1143,3 +1143,130 @@ function Plazas() {
     </Card>
   );
 }
+
+function AsignacionPorUsuario() {
+  const queryClient = useQueryClient();
+  const [usuarioSel, setUsuarioSel] = useState<string>("");
+
+  const { data: plazas = [] } = useQuery({
+    queryKey: ["plazas-gestion"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parking_spots")
+        .select("id, numero_plaza, unidad_id, unidades(nombre_unidad)")
+        .order("numero_plaza");
+      if (error) throw error;
+      return data as unknown as {
+        id: string;
+        numero_plaza: number;
+        unidad_id: string | null;
+        unidades: { nombre_unidad: string } | null;
+      }[];
+    },
+  });
+
+  const { data: titulares = [] } = useQuery({
+    queryKey: ["titulares"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("spot_titulares").select("spot_id, user_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: candidatos = [] } = useQuery({
+    queryKey: ["candidatos-titulares"],
+    queryFn: async () => {
+      const [{ data: perfiles }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("id, nombre_apellidos, login_md").order("nombre_apellidos"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      const titularIds = new Set(
+        (roles ?? []).filter((r) => r.role === "titular").map((r) => r.user_id),
+      );
+      return (perfiles ?? []).filter((p) => titularIds.has(p.id));
+    },
+  });
+
+  const alternar = useMutation({
+    mutationFn: async ({ spot_id, activo }: { spot_id: string; activo: boolean }) => {
+      if (activo) {
+        const { error } = await supabase
+          .from("spot_titulares")
+          .delete()
+          .eq("spot_id", spot_id)
+          .eq("user_id", usuarioSel);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("spot_titulares")
+          .insert({ spot_id, user_id: usuarioSel });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Asignación de plaza fija actualizada");
+      queryClient.invalidateQueries({ queryKey: ["titulares"] });
+      queryClient.invalidateQueries({ queryKey: ["sesion"] });
+    },
+    onError: () => toast.error("No se pudo actualizar la asignación."),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Asignar plaza fija a un Usuario Titular</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-w-md space-y-2">
+          <Label>Usuario Titular</Label>
+          <Select value={usuarioSel} onValueChange={setUsuarioSel}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un Usuario Titular" />
+            </SelectTrigger>
+            <SelectContent>
+              {candidatos.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nombre_apellidos} ({c.login_md})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {candidatos.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No hay usuarios con rol «Usuario Titular». Asigna ese rol desde la pestaña Usuarios.
+            </p>
+          )}
+        </div>
+
+        {usuarioSel && (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {plazas.map((p) => {
+              const activo = titulares.some(
+                (t) => t.spot_id === p.id && t.user_id === usuarioSel,
+              );
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2 rounded-lg border border-border p-2"
+                >
+                  <Checkbox
+                    id={`u-${p.id}`}
+                    checked={activo}
+                    onCheckedChange={() => alternar.mutate({ spot_id: p.id, activo })}
+                  />
+                  <Label htmlFor={`u-${p.id}`} className="text-sm">
+                    Plaza {p.numero_plaza}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({p.unidades?.nombre_unidad ?? "Sin unidad"})
+                    </span>
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
