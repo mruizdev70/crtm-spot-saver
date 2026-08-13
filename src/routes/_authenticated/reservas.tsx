@@ -429,7 +429,12 @@ function Reservas() {
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Plaza {plaza.numero_plaza}</span>
                   {estado.tipo === "libre" && <Badge variant="secondary">Libre</Badge>}
-                  {estado.tipo === "ocupada" && <Badge variant="destructive">Ocupada</Badge>}
+                  {estado.tipo === "ocupada" &&
+                    (estado.esMia ? (
+                      <Badge className="bg-success text-success-foreground">Tu reserva</Badge>
+                    ) : (
+                      <Badge variant="destructive">Ocupada</Badge>
+                    ))}
                   {estado.tipo === "preferente" && (
                     <Badge variant="outline">
                       <Lock className="mr-1 h-3 w-3" />
@@ -442,15 +447,39 @@ function Reservas() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {estado.tipo === "ocupada" && (
-                  <div className="text-sm">
-                    <p className="font-medium">
-                      {estado.reserva.profiles?.nombre_apellidos ?? "Empleado CRTM"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Matrícula {estado.reserva.matricula_usada}
-                    </p>
+                  <div className="space-y-2 text-sm">
+                    {estado.esMia ? (
+                      <>
+                        <p className="font-medium text-success">Tu reserva</p>
+                        <p className="text-xs text-muted-foreground">
+                          Matrícula {estado.reserva?.matricula_usada}
+                        </p>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          disabled={!estado.reserva}
+                          onClick={() => estado.reserva && setReservaAAnular(estado.reserva)}
+                        >
+                          Gestionar / anular
+                        </Button>
+                      </>
+                    ) : esAdmin && estado.reserva ? (
+                      <>
+                        <p className="font-medium">
+                          {estado.reserva.profiles?.nombre_apellidos ?? "Empleado CRTM"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Matrícula {estado.reserva.matricula_usada} · vista Admin
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Plaza reservada. Los datos del ocupante están protegidos (LOPD).
+                      </p>
+                    )}
                   </div>
                 )}
+
                 {estado.tipo === "preferente" && (
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Exclusivo Unidad {unidad}</p>
