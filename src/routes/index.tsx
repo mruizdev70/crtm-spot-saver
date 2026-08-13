@@ -45,8 +45,33 @@ function Login() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [recuperar, setRecuperar] = useState(false);
+  const [loginRecu, setLoginRecu] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  async function enviarRecuperacion() {
+    const valor = loginRecu.trim();
+    if (valor.length < 3) {
+      toast.error("Introduce tu Login de MD o correo corporativo.");
+      return;
+    }
+    const email = valor.includes("@") ? valor : `${valor}@crtm.es`;
+    setEnviando(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setEnviando(false);
+    if (error) {
+      toast.error("No se pudo enviar el correo de restablecimiento.");
+      return;
+    }
+    setRecuperar(false);
+    setLoginRecu("");
+    toast.success("Si el usuario existe, recibirás un correo con el enlace de restablecimiento.");
+  }
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
