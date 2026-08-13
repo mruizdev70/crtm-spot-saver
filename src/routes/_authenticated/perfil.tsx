@@ -117,6 +117,10 @@ function Perfil() {
         </CardContent>
       </Card>
 
+      <CambioPassword email={sesion.email} />
+
+
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Historial de reservas</CardTitle>
