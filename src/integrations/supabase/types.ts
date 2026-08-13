@@ -354,6 +354,14 @@ export type Database = {
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       my_unidad: { Args: { _user_id: string }; Returns: string }
+      ocupacion_dia: {
+        Args: { _fecha: string }
+        Returns: {
+          es_mia: boolean
+          ocupada: boolean
+          spot_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "titular" | "estandar"
