@@ -113,10 +113,48 @@ function Login() {
           <Button type="submit" className="w-full" disabled={cargando}>
             {cargando ? "Accediendo…" : "Acceder"}
           </Button>
+          <button
+            type="button"
+            className="w-full text-center text-xs text-primary underline-offset-4 hover:underline"
+            onClick={() => setRecuperar(true)}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
           <p className="text-center text-xs text-muted-foreground">
             El registro público está desactivado. Las altas las realiza Asuntos Generales.
           </p>
         </form>
+
+        <Dialog open={recuperar} onOpenChange={setRecuperar}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Restablecer contraseña</DialogTitle>
+              <DialogDescription>
+                Introduce tu Login de MD o tu correo corporativo y te enviaremos un enlace de un
+                solo uso para definir una nueva contraseña.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="recu">Login de MD / email</Label>
+              <Input
+                id="recu"
+                value={loginRecu}
+                onChange={(e) => setLoginRecu(e.target.value)}
+                placeholder="nombre.apellido"
+                maxLength={255}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setRecuperar(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={enviarRecuperacion} disabled={enviando}>
+                {enviando ? "Enviando…" : "Enviar enlace"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
