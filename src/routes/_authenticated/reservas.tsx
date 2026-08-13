@@ -119,6 +119,7 @@ function Reservas() {
     },
   });
 
+  // Solo devuelve las reservas visibles para el usuario (las suyas; todas si es Admin).
   const { data: reservas = [] } = useQuery({
     queryKey: ["reservas", fecha],
     queryFn: async () => {
@@ -131,6 +132,17 @@ function Reservas() {
       return data as unknown as Reserva[];
     },
   });
+
+  // Ocupación anonimizada (LOPD): solo indica qué plazas están ocupadas.
+  const { data: ocupacion = [] } = useQuery({
+    queryKey: ["ocupacion", fecha],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("ocupacion_dia", { _fecha: fecha });
+      if (error) throw error;
+      return (data ?? []) as { spot_id: string; ocupada: boolean; es_mia: boolean }[];
+    },
+  });
+
 
   const { data: enListaEspera } = useQuery({
     queryKey: ["espera", fecha, sesion?.userId],
@@ -165,6 +177,7 @@ function Reservas() {
       toast.success("Reserva confirmada");
       setPlazaAReservar(null);
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
     onError: (e: unknown) => {
       const msg = e instanceof Error ? e.message : "";
@@ -178,6 +191,7 @@ function Reservas() {
         toast.error("No se pudo completar la reserva.");
       }
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
   });
 
@@ -212,6 +226,7 @@ function Reservas() {
       }
       await avisarListaEspera(reserva.fecha_reserva, plaza?.numero_plaza ?? 0, unidad);
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
     onError: () => toast.error("No se pudo anular la reserva."),
   });
@@ -259,11 +274,14 @@ function Reservas() {
   });
 
   const miReserva = reservas.find((r) => r.user_id === sesion?.userId);
-  const todasOcupadas = plazas.length > 0 && reservas.length >= plazas.length;
+  const todasOcupadas = plazas.length > 0 && ocupacion.length >= plazas.length;
 
   function estadoPlaza(plaza: Plaza) {
-    const reserva = reservas.find((r) => r.spot_id === plaza.id);
-    if (reserva) return { tipo: "ocupada" as const, reserva };
+    const ocupada = ocupacion.find((o) => o.spot_id === plaza.id);
+    if (ocupada) {
+      const reserva = reservas.find((r) => r.spot_id === plaza.id) ?? null;
+      return { tipo: "ocupada" as const, esMia: ocupada.es_mia, reserva };
+    }
     if (fase === "cerrada") return { tipo: "cerrada" as const };
     if (!sesion) return { tipo: "libre" as const };
     // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
@@ -272,6 +290,7 @@ function Reservas() {
       return { tipo: "preferente" as const };
     return { tipo: "libre" as const };
   }
+
 
 
   const etiquetaFase: Record<string, { texto: string; variante: "default" | "secondary" }> = {
@@ -410,7 +429,12 @@ function Reservas() {
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Plaza {plaza.numero_plaza}</span>
                   {estado.tipo === "libre" && <Badge variant="secondary">Libre</Badge>}
-                  {estado.tipo === "ocupada" && <Badge variant="destructive">Ocupada</Badge>}
+                  {estado.tipo === "ocupada" &&
+                    (estado.esMia ? (
+                      <Badge className="bg-success text-success-foreground">Tu reserva</Badge>
+                    ) : (
+                      <Badge variant="destructive">Ocupada</Badge>
+                    ))}
                   {estado.tipo === "preferente" && (
                     <Badge variant="outline">
                       <Lock className="mr-1 h-3 w-3" />
@@ -423,15 +447,39 @@ function Reservas() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {estado.tipo === "ocupada" && (
-                  <div className="text-sm">
-                    <p className="font-medium">
-                      {estado.reserva.profiles?.nombre_apellidos ?? "Empleado CRTM"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Matrícula {estado.reserva.matricula_usada}
-                    </p>
+                  <div className="space-y-2 text-sm">
+                    {estado.esMia ? (
+                      <>
+                        <p className="font-medium text-success">Tu reserva</p>
+                        <p className="text-xs text-muted-foreground">
+                          Matrícula {estado.reserva?.matricula_usada}
+                        </p>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          disabled={!estado.reserva}
+                          onClick={() => estado.reserva && setReservaAAnular(estado.reserva)}
+                        >
+                          Gestionar / anular
+                        </Button>
+                      </>
+                    ) : esAdmin && estado.reserva ? (
+                      <>
+                        <p className="font-medium">
+                          {estado.reserva.profiles?.nombre_apellidos ?? "Empleado CRTM"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Matrícula {estado.reserva.matricula_usada} · vista Admin
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Plaza reservada. Los datos del ocupante están protegidos (LOPD).
+                      </p>
+                    )}
                   </div>
                 )}
+
                 {estado.tipo === "preferente" && (
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Exclusivo Unidad {unidad}</p>

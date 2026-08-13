@@ -7,6 +7,14 @@ import logo from "@/assets/crtm-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
@@ -37,8 +45,33 @@ function Login() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [recuperar, setRecuperar] = useState(false);
+  const [loginRecu, setLoginRecu] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  async function enviarRecuperacion() {
+    const valor = loginRecu.trim();
+    if (valor.length < 3) {
+      toast.error("Introduce tu Login de MD o correo corporativo.");
+      return;
+    }
+    const email = valor.includes("@") ? valor : `${valor}@crtm.es`;
+    setEnviando(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setEnviando(false);
+    if (error) {
+      toast.error("No se pudo enviar el correo de restablecimiento.");
+      return;
+    }
+    setRecuperar(false);
+    setLoginRecu("");
+    toast.success("Si el usuario existe, recibirás un correo con el enlace de restablecimiento.");
+  }
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -113,10 +146,48 @@ function Login() {
           <Button type="submit" className="w-full" disabled={cargando}>
             {cargando ? "Accediendo…" : "Acceder"}
           </Button>
+          <button
+            type="button"
+            className="w-full text-center text-xs text-primary underline-offset-4 hover:underline"
+            onClick={() => setRecuperar(true)}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
           <p className="text-center text-xs text-muted-foreground">
             El registro público está desactivado. Las altas las realiza Asuntos Generales.
           </p>
         </form>
+
+        <Dialog open={recuperar} onOpenChange={setRecuperar}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Restablecer contraseña</DialogTitle>
+              <DialogDescription>
+                Introduce tu Login de MD o tu correo corporativo y te enviaremos un enlace de un
+                solo uso para definir una nueva contraseña.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="recu">Login de MD / email</Label>
+              <Input
+                id="recu"
+                value={loginRecu}
+                onChange={(e) => setLoginRecu(e.target.value)}
+                placeholder="nombre.apellido"
+                maxLength={255}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setRecuperar(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={enviarRecuperacion} disabled={enviando}>
+                {enviando ? "Enviando…" : "Enviar enlace"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
