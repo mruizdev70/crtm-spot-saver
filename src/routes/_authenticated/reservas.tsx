@@ -119,6 +119,7 @@ function Reservas() {
     },
   });
 
+  // Solo devuelve las reservas visibles para el usuario (las suyas; todas si es Admin).
   const { data: reservas = [] } = useQuery({
     queryKey: ["reservas", fecha],
     queryFn: async () => {
@@ -131,6 +132,17 @@ function Reservas() {
       return data as unknown as Reserva[];
     },
   });
+
+  // Ocupación anonimizada (LOPD): solo indica qué plazas están ocupadas.
+  const { data: ocupacion = [] } = useQuery({
+    queryKey: ["ocupacion", fecha],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("ocupacion_dia", { _fecha: fecha });
+      if (error) throw error;
+      return (data ?? []) as { spot_id: string; ocupada: boolean; es_mia: boolean }[];
+    },
+  });
+
 
   const { data: enListaEspera } = useQuery({
     queryKey: ["espera", fecha, sesion?.userId],
