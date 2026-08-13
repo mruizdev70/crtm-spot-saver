@@ -184,6 +184,111 @@ function Perfil() {
   );
 }
 
+const esquemaPassword = z
+  .object({
+    actual: z.string().min(6, "Introduce tu contraseña actual").max(72),
+    nueva: z.string().min(8, "La nueva contraseña debe tener al menos 8 caracteres").max(72),
+    confirmar: z.string().min(8).max(72),
+  })
+  .refine((d) => d.nueva === d.confirmar, {
+    message: "La confirmación no coincide con la nueva contraseña",
+    path: ["confirmar"],
+  })
+  .refine((d) => d.nueva !== d.actual, {
+    message: "La nueva contraseña debe ser distinta de la actual",
+    path: ["nueva"],
+  });
+
+function CambioPassword({ email }: { email: string | null }) {
+  const [actual, setActual] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [confirmar, setConfirmar] = useState("");
+  const [cargando, setCargando] = useState(false);
+
+  async function cambiar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) {
+      toast.error("No se ha podido determinar tu correo corporativo.");
+      return;
+    }
+    const parsed = esquemaPassword.safeParse({ actual, nueva, confirmar });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos no válidos");
+      return;
+    }
+    setCargando(true);
+    // Verificación de la contraseña actual antes de actualizar.
+    const { error: errorLogin } = await supabase.auth.signInWithPassword({
+      email,
+      password: parsed.data.actual,
+    });
+    if (errorLogin) {
+      setCargando(false);
+      toast.error("La contraseña actual no es correcta.");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: parsed.data.nueva });
+    setCargando(false);
+    if (error) {
+      toast.error("No se pudo actualizar la contraseña.");
+      return;
+    }
+    setActual("");
+    setNueva("");
+    setConfirmar("");
+    toast.success("Contraseña actualizada correctamente.");
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Cambiar contraseña</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={cambiar} className="grid gap-4 sm:max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="pw-actual">Contraseña actual</Label>
+            <Input
+              id="pw-actual"
+              type="password"
+              autoComplete="current-password"
+              value={actual}
+              onChange={(e) => setActual(e.target.value)}
+              maxLength={72}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pw-nueva">Nueva contraseña</Label>
+            <Input
+              id="pw-nueva"
+              type="password"
+              autoComplete="new-password"
+              value={nueva}
+              onChange={(e) => setNueva(e.target.value)}
+              maxLength={72}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pw-conf">Confirmar nueva contraseña</Label>
+            <Input
+              id="pw-conf"
+              type="password"
+              autoComplete="new-password"
+              value={confirmar}
+              onChange={(e) => setConfirmar(e.target.value)}
+              maxLength={72}
+            />
+          </div>
+          <Button type="submit" disabled={cargando} className="justify-self-start">
+            {cargando ? "Actualizando…" : "Actualizar contraseña"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <div>
