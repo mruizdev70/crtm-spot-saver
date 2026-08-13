@@ -274,11 +274,14 @@ function Reservas() {
   });
 
   const miReserva = reservas.find((r) => r.user_id === sesion?.userId);
-  const todasOcupadas = plazas.length > 0 && reservas.length >= plazas.length;
+  const todasOcupadas = plazas.length > 0 && ocupacion.length >= plazas.length;
 
   function estadoPlaza(plaza: Plaza) {
-    const reserva = reservas.find((r) => r.spot_id === plaza.id);
-    if (reserva) return { tipo: "ocupada" as const, reserva };
+    const ocupada = ocupacion.find((o) => o.spot_id === plaza.id);
+    if (ocupada) {
+      const reserva = reservas.find((r) => r.spot_id === plaza.id) ?? null;
+      return { tipo: "ocupada" as const, esMia: ocupada.es_mia, reserva };
+    }
     if (fase === "cerrada") return { tipo: "cerrada" as const };
     if (!sesion) return { tipo: "libre" as const };
     // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
@@ -287,6 +290,7 @@ function Reservas() {
       return { tipo: "preferente" as const };
     return { tipo: "libre" as const };
   }
+
 
 
   const etiquetaFase: Record<string, { texto: string; variante: "default" | "secondary" }> = {
