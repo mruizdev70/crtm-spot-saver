@@ -177,6 +177,7 @@ function Reservas() {
       toast.success("Reserva confirmada");
       setPlazaAReservar(null);
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
     onError: (e: unknown) => {
       const msg = e instanceof Error ? e.message : "";
@@ -190,6 +191,7 @@ function Reservas() {
         toast.error("No se pudo completar la reserva.");
       }
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
   });
 
@@ -224,6 +226,7 @@ function Reservas() {
       }
       await avisarListaEspera(reserva.fecha_reserva, plaza?.numero_plaza ?? 0, unidad);
       queryClient.invalidateQueries({ queryKey: ["reservas", fecha] });
+      queryClient.invalidateQueries({ queryKey: ["ocupacion", fecha] });
     },
     onError: () => toast.error("No se pudo anular la reserva."),
   });
