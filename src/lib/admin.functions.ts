@@ -114,3 +114,45 @@ export const actualizarUsuario = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const eliminarUsuarioSchema = z.object({ user_id: z.string().uuid() });
+
+export const eliminarUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => eliminarUsuarioSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: esStaff } = await context.supabase.rpc("is_staff", {
+      _user_id: context.userId,
+    });
+    if (!esStaff) throw new Error("Sin permisos.");
+    if (data.user_id === context.userId)
+      throw new Error("No puedes eliminar tu propia cuenta.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: perfil } = await supabaseAdmin
+      .from("profiles")
+      .select("login_md")
+      .eq("id", data.user_id)
+      .maybeSingle();
+
+    await supabaseAdmin.from("reservations").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("waitlist_notifications").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("spot_titulares").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("matriculas").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("sanctions").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id);
+    await supabaseAdmin.from("audit_logs").update({ user_id: null }).eq("user_id", data.user_id);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.user_id);
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      user_id: context.userId,
+      accion: "baja_usuario",
+      detalles: { usuario: perfil?.login_md ?? data.user_id },
+    });
+
+    return { ok: true };
+  });
