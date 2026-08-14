@@ -6,7 +6,7 @@ import { Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/useSesion";
-import { actualizarUsuario, crearUsuario } from "@/lib/admin.functions";
+import { actualizarUsuario, crearUsuario, eliminarUsuario } from "@/lib/admin.functions";
 import { fechaHora, iso } from "@/lib/fechas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -156,6 +156,9 @@ function Usuarios() {
   const { data: unidades = [] } = useUnidades();
   const crear = useServerFn(crearUsuario);
   const actualizar = useServerFn(actualizarUsuario);
+  const borrar = useServerFn(eliminarUsuario);
+  const { data: sesion } = useSesion();
+  const [aBorrar, setABorrar] = useState<FilaUsuario | null>(null);
   const [abierto, setAbierto] = useState(false);
   const [editando, setEditando] = useState<FilaUsuario | null>(null);
 
@@ -263,10 +266,25 @@ function Usuarios() {
       toast.error(e instanceof Error ? e.message : "No se pudo guardar el usuario."),
   });
 
+  const eliminar = useMutation({
+    mutationFn: async (id: string) => borrar({ data: { user_id: id } }),
+    onSuccess: () => {
+      toast.success("Usuario dado de baja");
+      setABorrar(null);
+      queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+      queryClient.invalidateQueries({ queryKey: ["roles-todos"] });
+      queryClient.invalidateQueries({ queryKey: ["matriculas-todas"] });
+      queryClient.invalidateQueries({ queryKey: ["titulares"] });
+      queryClient.invalidateQueries({ queryKey: ["auditoria"] });
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "No se pudo dar de baja al usuario."),
+  });
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Alta y edición de usuarios</CardTitle>
+        <CardTitle className="text-base">Alta, edición y baja de usuarios</CardTitle>
         <Button size="sm" onClick={abrirNuevo}>
           <Plus className="mr-2 h-4 w-4" /> Nuevo usuario
         </Button>
@@ -303,15 +321,56 @@ function Usuarios() {
                     .join(", ") || "—"}
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => abrirEdicion(u)}>
-                    Editar
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => abrirEdicion(u)}>
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      disabled={u.id === sesion?.userId}
+                      title={
+                        u.id === sesion?.userId
+                          ? "No puedes darte de baja a ti mismo"
+                          : "Dar de baja"
+                      }
+                      onClick={() => setABorrar(u)}
+                    >
+                      Dar de baja
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={!!aBorrar} onOpenChange={(o) => !o && setABorrar(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dar de baja usuario</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Se eliminará la cuenta de <strong>{aBorrar?.nombre_apellidos}</strong> junto con sus
+            matrículas, titularidades, reservas, sanciones y avisos. La auditoría se conserva. Esta
+            acción no se puede deshacer.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setABorrar(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={eliminar.isPending}
+              onClick={() => eliminar.mutate(aBorrar!.id)}
+            >
+              Confirmar baja
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={abierto} onOpenChange={setAbierto}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
