@@ -395,15 +395,19 @@ function Reservas() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Matrícula {miReserva.matricula_usada} ·{" "}
-                  {esAnulacionTardia(miReserva.fecha_reserva, ahora)
-                    ? "fuera de plazo de anulación (20:00h)"
-                    : "puedes anular sin infracción hasta las 20:00h del día anterior"}
+                  {soloLectura
+                    ? "fecha pasada: solo consulta"
+                    : esAnulacionTardia(miReserva.fecha_reserva, ahora)
+                      ? "fuera de plazo de anulación (20:00h)"
+                      : "puedes anular sin infracción hasta las 20:00h del día anterior"}
                 </p>
               </div>
             </div>
-            <Button variant="destructive" onClick={() => setReservaAAnular(miReserva)}>
-              Anular reserva
-            </Button>
+            {!soloLectura && (
+              <Button variant="destructive" onClick={() => setReservaAAnular(miReserva)}>
+                Anular reserva
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
