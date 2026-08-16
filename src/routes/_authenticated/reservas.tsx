@@ -144,7 +144,12 @@ function Reservas() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("ocupacion_dia", { _fecha: fecha });
       if (error) throw error;
-      return (data ?? []) as { spot_id: string; ocupada: boolean; es_mia: boolean }[];
+      return (data ?? []) as {
+        spot_id: string;
+        ocupada: boolean;
+        es_mia: boolean;
+        login_md: string | null;
+      }[];
     },
   });
 
