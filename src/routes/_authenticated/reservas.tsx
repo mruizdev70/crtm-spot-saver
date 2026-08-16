@@ -101,6 +101,11 @@ function Reservas() {
   const fechasSemana = dias.map(iso);
   const fecha = fechasSemana.includes(diaSel) ? diaSel : fechasSemana[0]!;
 
+  // Los usuarios no Admin no pueden crear ni modificar reservas de días pasados.
+  const hoyIso = iso(ahora);
+  const esFechaPasada = fecha < hoyIso;
+  const soloLectura = esFechaPasada && !esAdmin;
+
 
   const [plazaAReservar, setPlazaAReservar] = useState<Plaza | null>(null);
   const [matriculaSel, setMatriculaSel] = useState<string>("");
