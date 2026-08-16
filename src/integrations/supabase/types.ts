@@ -358,6 +358,7 @@ export type Database = {
         Args: { _fecha: string }
         Returns: {
           es_mia: boolean
+          login_md: string
           ocupada: boolean
           spot_id: string
         }[]

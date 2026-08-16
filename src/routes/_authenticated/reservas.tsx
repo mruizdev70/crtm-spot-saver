@@ -101,6 +101,11 @@ function Reservas() {
   const fechasSemana = dias.map(iso);
   const fecha = fechasSemana.includes(diaSel) ? diaSel : fechasSemana[0]!;
 
+  // Los usuarios no Admin no pueden crear ni modificar reservas de días pasados.
+  const hoyIso = iso(ahora);
+  const esFechaPasada = fecha < hoyIso;
+  const soloLectura = esFechaPasada && !esAdmin;
+
 
   const [plazaAReservar, setPlazaAReservar] = useState<Plaza | null>(null);
   const [matriculaSel, setMatriculaSel] = useState<string>("");
@@ -139,7 +144,12 @@ function Reservas() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("ocupacion_dia", { _fecha: fecha });
       if (error) throw error;
-      return (data ?? []) as { spot_id: string; ocupada: boolean; es_mia: boolean }[];
+      return (data ?? []) as {
+        spot_id: string;
+        ocupada: boolean;
+        es_mia: boolean;
+        login_md: string | null;
+      }[];
     },
   });
 
@@ -280,8 +290,14 @@ function Reservas() {
     const ocupada = ocupacion.find((o) => o.spot_id === plaza.id);
     if (ocupada) {
       const reserva = reservas.find((r) => r.spot_id === plaza.id) ?? null;
-      return { tipo: "ocupada" as const, esMia: ocupada.es_mia, reserva };
+      return {
+        tipo: "ocupada" as const,
+        esMia: ocupada.es_mia,
+        loginMd: ocupada.login_md,
+        reserva,
+      };
     }
+    if (soloLectura) return { tipo: "cerrada" as const };
     if (fase === "cerrada") return { tipo: "cerrada" as const };
     if (!sesion) return { tipo: "libre" as const };
     // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
@@ -379,15 +395,19 @@ function Reservas() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Matrícula {miReserva.matricula_usada} ·{" "}
-                  {esAnulacionTardia(miReserva.fecha_reserva, ahora)
-                    ? "fuera de plazo de anulación (20:00h)"
-                    : "puedes anular sin infracción hasta las 20:00h del día anterior"}
+                  {soloLectura
+                    ? "fecha pasada: solo consulta"
+                    : esAnulacionTardia(miReserva.fecha_reserva, ahora)
+                      ? "fuera de plazo de anulación (20:00h)"
+                      : "puedes anular sin infracción hasta las 20:00h del día anterior"}
                 </p>
               </div>
             </div>
-            <Button variant="destructive" onClick={() => setReservaAAnular(miReserva)}>
-              Anular reserva
-            </Button>
+            {!soloLectura && (
+              <Button variant="destructive" onClick={() => setReservaAAnular(miReserva)}>
+                Anular reserva
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
