@@ -290,8 +290,14 @@ function Reservas() {
     const ocupada = ocupacion.find((o) => o.spot_id === plaza.id);
     if (ocupada) {
       const reserva = reservas.find((r) => r.spot_id === plaza.id) ?? null;
-      return { tipo: "ocupada" as const, esMia: ocupada.es_mia, reserva };
+      return {
+        tipo: "ocupada" as const,
+        esMia: ocupada.es_mia,
+        loginMd: ocupada.login_md,
+        reserva,
+      };
     }
+    if (soloLectura) return { tipo: "cerrada" as const };
     if (fase === "cerrada") return { tipo: "cerrada" as const };
     if (!sesion) return { tipo: "libre" as const };
     // Derecho preferente: ser Usuario Titular asignado a esa plaza fija.
