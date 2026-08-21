@@ -1,14 +1,18 @@
-# Welcome to your Lovable project
+# CRTM Parking Connect
+
+Crea una PWA profesional, limpia y responsiva para la gestión del aparcamiento de empleados del CRTM en Avda. Asturias 4 ("CRTM Parking Manager") siguiendo estrictamente la normativa oficial interna. Estética profesional en modo oscuro (tonos azul corporativo, gris y acentos verde/rojo para estados de plazas). ### 1. AUTENTICACIÓN Y ROLES (Sin Registro Público) - Desactiva el registro público de usuarios (Sign Up público). Solo los usuarios creados en la base de datos por los Administradores pueden iniciar sesión. - Credenciales de acceso: "Login de MD" (Comunidad de Madrid / Email corporativo) + Contraseña. - Datos de Perfil del Usuario: * Nombre y Apellidos. * Login de MD. * Unidad / División a la que pertenece. * ¿Es Responsable de Unidad? (Booleano). * Matrículas autorizadas (Permitir guardar un listado de hasta 3 matrículas previamente validadas por Metro). * Rol del sistema: [Empleado] | [Responsable de Unidad] | [Admin - Asuntos Generales] | [Autoridad - Jefa Coord. Admón]. --- ### 2. GESTIÓN DE LAS 15 PLAZAS Y REGLAS DE RESERVA Existen 15 plazas numeradas (Plaza 1 a Plaza 15), cada una adscrita a una Unidad/División específica del CRTM. Ventanas Temporales para reservar la semana siguiente (Lunes a Viernes): 1. FASE PREFERENTE DE UNIDAD (Lunes 00:00h a Jueves 23:59h de la semana previa): - Solo los usuarios adscritos a la Unidad de esa plaza (y su Responsable) pueden reservarla. - Para el resto de unidades, la plaza aparece bloqueada con el texto "Exclusivo Unidad [Nombre]". 2. FASE LIBRE (Desde el Viernes 00:00h de la semana previa): - Cualquier plaza no reservada (o anulada) queda abierta a CUALQUIER empleado registrado del CRTM por orden de llegada. Al confirmar una reserva, el usuario debe seleccionar de un desplegable cuál de sus matrículas autorizadas utilizará ese día. --- ### 3. ANULACIONES, NOTIFICACIÓN EN TEAMS Y LISTA DE ESPERA (PUSH) - Hora límite de anulación sin infracción: 20:00h (8 PM) del día anterior a la fecha reservada. - Al pulsar "Anular Reserva": * Si es antes de las 20:00h: La plaza se libera. La app muestra un desplegable/pop-up con un botón "📋 Copiar aviso para Teams" que genera el texto: "📢 Plaza [N.º] ([Unidad]) liberada para el [Fecha]. Disponible en la app." * Si es después de las 20:00h: La anulación se ejecuta, pero se marca una alerta de "Anulación Tardía" en el perfil del usuario visible para los Administradores. - Lista de Espera con Notificaciones Push: * Si todas las plazas de un día están ocupadas, muestra el botón "🔔 Avisarme si queda alguna libre para este día". * Guarda la suscripción PWA del usuario asociándola a esa FECHA CONCRETA. * Cuando se anule una reserva para esa fecha, envía automáticamente una notificación Push únicamente a los usuarios suscritos a ese día. --- ### 4. MENÚ EXCLUSIVO DE ADMINISTRACIÓN Y AUTORIDAD Sección accesible solo para roles "Admin" y "Autoridad": A. Alta y Edición de Usuarios: - Crear usuarios, asignarles su Unidad, marcar si es Responsable y gestionar su listado de matrículas autorizadas. B. Control Diario de Ocupación (Seguridad): - Buscador por fecha para ver las 15 plazas con: [N.º Plaza | Unidad | Usuario | Login MD | Matrícula Seleccionada | Estado]. Opción de exportar reporte diario. C. Módulo de Sanciones Diferidas: - Registrar infracciones (No-Show o Anulación tardía >20:00h). - Catálogo de sanciones según procedimiento: 1) Advertencia Verbal, 2) Advertencia por Escrito, 3) Retirada Temporal de reservas (definir N.º de días), 4) Retirada Definitiva. - REGLA DE APLICACIÓN DIFERIDA: La sanción por días de bloqueo comienza a aplicarse automáticamente 2 SEMANAS DESPUÉS de la fecha del registro de la infracción, protegiendo las reservas vigentes del usuario. D. Registro de Auditoría (Audit Log): - Tabla con historial inalterable de cada acción: Fecha/Hora, Usuario, Plaza, Matrícula, Tipo de Acción y Autor. --- ### 5. SECCIONES INFORMATIVAS Y MANUAL - 📖 Procedimiento Oficial: Texto desplegable que recopila las normas oficiales del CRTM en Avda. Asturias 4. - ❓ Preguntas Frecuentes: Secciones Plegables (Accordion) sobre el límite de las 20:00h, doble notificación, resolución de concurrencia y sanciones diferidas. --- ### 6. ARQUITECTURA DE BASE DE DATOS (SUPABASE) Crea y conecta la estructura de tablas en Supabase con sus políticas de seguridad (RLS): 1. `profiles`: (id, login_md, nombre_apellidos, unidad_id, es_responsable, rol, created_at) 2. `matriculas`: (id, user_id, matricula) 3. `unidades`: (id, nombre_unidad) 4. `parking_spots`: (id, numero_plaza, unidad_id) 5. `reservations`: (id, spot_id, user_id, matricula_usada, fecha_reserva, status, created_at) 6. `waitlist_notifications`: (id, user_id, fecha_deseada, endpoint_push) 7. `sanctions`: (id, user_id, tipo_sancion, dias_bloqueo, fecha_infraccion, fecha_inicio_bloqueo, fecha_fin_bloqueo) 8. `audit_logs`: (id, user_id, accion, detalles, created_at)       incluye el logo del CRTM que te he adjuntado
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://crtm-spot-saver.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/845aa09f-4a19-4535-a77a-eacd24167f6f).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +24,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
